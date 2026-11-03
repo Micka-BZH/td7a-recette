@@ -2,6 +2,8 @@
 
 import argparse
 import csv
+import subprocess
+import shutil
 from pathlib import Path
 
 # ---- Les données -------------------------------------------------------------
@@ -17,6 +19,7 @@ VERS_SI = {"oz": ("g", 28.3495), "cup": ("ml", 236.588)}
 RACINE = Path(__file__).parent
 DONNEES = RACINE / "recettes"
 SORTIE = RACINE / "sortie"
+STYLE = RACINE / "style.css"
 
 
 # ---- Les fonctions -----------------------------------------------------------
@@ -88,6 +91,19 @@ def ecrire_markdown(nom, personnes, unites, ingredients):
     return markdown
 
 
+def ecrire_page(markdown):
+    """La page HTML d'un fichier Markdown de sortie/, par pandoc,
+       avec la feuille de style ; renvoie son chemin."""
+    with open(markdown, encoding="utf-8") as fichier:
+        premiere_ligne = fichier.readline()
+    titre = premiere_ligne.strip()
+    titre = titre.lstrip("# ")
+    shutil.copy(STYLE, SORTIE / "style.css")
+    page = markdown.with_suffix(".html")
+    subprocess.run(["pandoc", str(markdown), "-o", str(page), "--standalone",
+                     "--css", "style.css", "--metadata", "pagetitle=" + titre], check=True)
+    return page
+
 # ---- Le programme -------------------------------------------------------------
 
 # Les valeurs viennent de la ligne de commande
@@ -121,3 +137,6 @@ print("écrit :", fichier)
 if options.page:
     markdown = ecrire_markdown(NOM, PERSONNES, UNITES, ingredients)
     print("écrit :", markdown)
+
+page = ecrire_page(markdown)
+print("écrit :", page)
